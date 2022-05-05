@@ -6,22 +6,10 @@ from flask import Flask, render_template, redirect, url_for, request, flash
 import tmdb_client
 
 app = Flask(__name__)
-types = {"popular": "Popularne", "top_rated": "Najlepiej oceniane", "now_playing": "Obecnie grane", "upcoming": "Wkrótce"}
-app.secret_key = b'mlody'
+types = {"popular": "Popularne", "top_rated": "Top Rated", "now_playing": "Now Playing", "upcoming": "Upcoming"}
+app.secret_key = b'my-secret'
 FAVORITES = set()
 
-
-@app.route('/')
-def homepage():
-    selected_list = request.args.get('list_type', "popular")
-    if selected_list not in types:
-        selected_list = 'popular'
-    movies = tmdb_client.get_movies(how_many=12, list_type=selected_list)
-    return render_template("homepage.html", movies=movies, current_list=selected_list, types=types)
-
-@app.context_processor
-def utility_processor():
-    return {"tmdb_image_url": tmdb_client.get_poster_url}
 
 @app.route("/favorites/add", methods=['POST'])
 def add_to_favorites():
@@ -46,6 +34,15 @@ def show_favorites():
     return render_template("homepage.html", movies=movies, types=types)
 
 
+@app.route('/')
+def homepage():
+    selected_list = request.args.get('list_type', "popular")
+    if selected_list not in types:
+        selected_list = 'popular'
+    movies = tmdb_client.get_movies(how_many=12, list_type=selected_list)
+    return render_template("homepage.html", movies=movies, current_list=selected_list, types=types)
+
+
 @app.route("/movie/<int:movie_id>")
 def movie_details(movie_id):
     details = tmdb_client.get_single_movie(movie_id)
@@ -53,6 +50,12 @@ def movie_details(movie_id):
     movie_images = tmdb_client.get_movie_images(movie_id)
     selected_backdrop = random.choice(movie_images['backdrops'])
     return render_template("movie_details.html", movie=details, cast=cast, selected_backdrop=selected_backdrop)
+
+
+@app.context_processor
+def utility_processor():
+    return {"tmdb_image_url": tmdb_client.get_poster_url}
+
 
 @app.route('/search')
 def search():
@@ -63,11 +66,14 @@ def search():
         movies = []
     return render_template("search.html", movies=movies, search_query=search_query)
 
-@app.route('/series')
-def series():
+
+@app.route('/today')
+def today():
     movies = tmdb_client.get_airing_today()
     today = datetime.date.today()
-    return render_template("series.html", movies=movies, today=today)
+    selected_backdrop = random.choice(movie_images['backdrops'])
+    return render_template("today.html", movies=movies, today=today)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
